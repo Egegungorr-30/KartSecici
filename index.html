@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Kart Seçici</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+      text-align: center;
+    }
+    h1 { color: #333; }
+
+    #cardList {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .cardItem {
+      display: inline-block;
+      margin: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px #ccc;
+      width: 120px;
+    }
+    .cardItem img {
+      width: 100%;
+      height: auto;
+    }
+
+    input[type="number"] {
+      width: 50px;
+      text-align: center;
+      margin-top: 5px;
+    }
+
+    button {
+      margin: 10px 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #0077cc;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #005fa3;
+    }
+
+    #selectedCard img {
+      width: 150px;
+      height: auto;
+    }
+
+    @media (max-width: 600px) {
+      .cardItem {
+        width: 100px;
+      }
+      button {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎴 Kart Seçici</h1>
+
+  <input type="file" id="fileInput" accept="image/*" multiple><br>
+
+  <button onclick="selectRandomCard()">🎲 Rastgele Kart Seç</button>
+  <button onclick="undoLast()">↩️ Geri Al</button>
+  <button onclick="resetDeck()">♻️ Deste Sıfırla</button>
+
+  <div id="cardList"></div>
+
+  <h2>Seçilen Kart:</h2>
+  <div id="selectedCard"></div>
+
+  <script>
+    const cards = [];
+    let lastSelected = null;
+
+    document.getElementById('fileInput').addEventListener('change', function (event) {
+      const files = event.target.files;
+      for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const imageUrl = e.target.result;
+          const card = {
+            name: file.name,
+            image: imageUrl,
+            count: 1
+          };
+          cards.push(card);
+          displayCard(card);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function displayCard(card) {
+      const container = document.createElement('div');
+      container.className = 'cardItem';
+      container.dataset.name = card.name;
+
+      const img = document.createElement('img');
+      img.src = card.image;
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.value = card.count;
+      input.addEventListener('change', () => {
+        card.count = parseInt(input.value) || 0;
+      });
+
+      container.appendChild(img);
+      container.appendChild(input);
+      document.getElementById('cardList').appendChild(container);
+    }
+
+    function selectRandomCard() {
+      const virtualDeck = [];
+
+      cards.forEach(card => {
+        for (let i = 0; i < card.count; i++) {
+          virtualDeck.push(card);
+        }
+      });
+
+      if (virtualDeck.length === 0) {
+        alert("Destede hiç kart kalmadı!");
+        return;
+      }
+
+      const selected = virtualDeck[Math.floor(Math.random() * virtualDeck.length)];
+      selected.count--;
+      lastSelected = selected;
+
+      document.getElementById('selectedCard').innerHTML =
+        `<img src="${selected.image}"><p>${selected.name}</p>`;
+
+      const allItems = document.querySelectorAll('.cardItem');
+      for (let item of allItems) {
+        if (item.dataset.name === selected.name) {
+          const input = item.querySelector('input');
+          input.value = selected.count;
+          if (selected.count <= 0) {
+            item.remove();
+            const index = cards.findIndex(c => c.name === selected.name);
+            if (index > -1) cards.splice(index, 1);
+          }
+          break;
+        }
+      }
+    }
+
+    function undoLast() {
+      if (!lastSelected) {
+        alert("Geri alınacak bir seçim yok!");
+        return;
+      }
+
+      const existing = cards.find(c => c.name === lastSelected.name);
+      if (existing) {
+        existing.count++;
+        const existingInput = document.querySelector(`[data-name="${existing.name}"] input`);
+        if (existingInput) existingInput.value = existing.count;
+      } else {
+        cards.push({ ...lastSelected, count: 1 });
+        displayCard(lastSelected);
+      }
+
+      document.getElementById('selectedCard').innerHTML = '';
+      lastSelected = null;
+    }
+
+    function resetDeck() {
+      if (!confirm("Tüm kartlar silinsin mi?")) return;
+      cards.length = 0;
+      lastSelected = null;
+      document.getElementById('cardList').innerHTML = '';
+      document.getElementById('selectedCard').innerHTML = '';
+    }
+  </script>
+
+</body>
+</html>
