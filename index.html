@@ -5,9 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Card Selector</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f4f4f9;
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-between;
+      width: 80%;
+    }
+
+    .left-section, .right-section {
+      width: 48%;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin-top: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    #card-settings {
+      margin-bottom: 20px;
+    }
+
+    .card-type {
+      margin-bottom: 10px;
+    }
+
+    .card-type label {
+      margin-right: 10px;
+    }
+
+    input[type="number"] {
+      width: 60px;
+    }
+  </style>
 </head>
 <body>
+
   <div class="container">
     <!-- Sol taraf: Kart adetlerini ayarlama -->
     <section class="left-section">
@@ -15,6 +81,7 @@
       <div id="card-settings">
         <!-- Kart adetleri burada gösterilecek -->
       </div>
+      <button id="add-card-btn">Kart Ekle</button>
     </section>
 
     <!-- Sağ taraf: Kart seçme ve gösterme -->
@@ -33,6 +100,93 @@
     <p>Created with ❤️ by Egegungorr</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    // Kart türleri ve adetlerini tutacak array
+    let cardTypes = [
+      { name: 'Kart 1', quantity: 0 },
+      { name: 'Kart 2', quantity: 0 },
+      { name: 'Kart 3', quantity: 0 },
+    ];
+
+    let deck = [];
+
+    // Kart türleri ekleme işlevi
+    function renderCardSettings() {
+      const cardSettingsDiv = document.getElementById("card-settings");
+      cardSettingsDiv.innerHTML = ''; // Önceki içerikleri temizle
+
+      cardTypes.forEach((card, index) => {
+        const cardDiv = document.createElement("div");
+        cardDiv.classList.add("card-type");
+
+        const nameLabel = document.createElement("label");
+        nameLabel.innerText = card.name;
+
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "number";
+        quantityInput.value = card.quantity;
+        quantityInput.min = "0";
+        quantityInput.addEventListener("input", (e) => {
+          card.quantity = parseInt(e.target.value);
+        });
+
+        cardDiv.appendChild(nameLabel);
+        cardDiv.appendChild(quantityInput);
+        cardSettingsDiv.appendChild(cardDiv);
+      });
+    }
+
+    // Kart ekleme
+    document.getElementById("add-card-btn").addEventListener("click", () => {
+      const cardName = prompt("Kart adı girin (örn. Kart 4):");
+      if (cardName) {
+        const newCard = { name: cardName, quantity: 0 };
+        cardTypes.push(newCard);
+        renderCardSettings();
+    });
+
+    // Rastgele kart seçme
+    document.getElementById("pick-card-btn").addEventListener("click", () => {
+      deck = [];
+      cardTypes.forEach(card => {
+        for (let i = 0; i < card.quantity; i++) {
+          deck.push(card.name);
+        }
+      });
+
+      if (deck.length > 0) {
+        const randomCard = deck[Math.floor(Math.random() * deck.length)];
+        document.getElementById("picked-card").innerText = `Seçilen Kart: ${randomCard}`;
+        // Seçilen kartı desteden çıkar
+        const index = deck.indexOf(randomCard);
+        if (index > -1) {
+          deck.splice(index, 1);
+        }
+      } else {
+        document.getElementById("picked-card").innerText = "Deste boş!";
+      }
+    });
+
+    // Deste sıfırlama
+    document.getElementById("reset-deck-btn").addEventListener("click", () => {
+      cardTypes.forEach(card => card.quantity = 0);
+      renderCardSettings();
+      document.getElementById("picked-card").innerText = '';
+    });
+
+    // Deste kaydetme
+    document.getElementById("save-deck-btn").addEventListener("click", () => {
+      const deckName = prompt("Deste adı girin:");
+      if (deckName) {
+        const savedDecks = JSON.parse(localStorage.getItem("savedDecks")) || [];
+        savedDecks.push({ name: deckName, cards: [...cardTypes] });
+        localStorage.setItem("savedDecks", JSON.stringify(savedDecks));
+        alert("Deste kaydedildi!");
+      }
+    });
+
+    // İlk render
+    renderCardSettings();
+  </script>
 </body>
 </html>
