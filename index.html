@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Deste Kart Seçici</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .gelen-kart {
+      display: inline-block;
+      padding: 8px 12px;
+      margin: 5px;
+      background-color: #f0f0f0;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Deste Kart Seçici</h1>
+
+  <input type="file" id="kart-sec" multiple accept="image/*">
+  <button onclick="kartlariYukle()">Kartları Yükle</button>
+  <br><br>
+
+  <div id="kart-adetleri-container"></div>
+  <br>
+
+  <label for="deste-ismi">Deste İsmi:</label><br>
+  <input type="text" id="deste-ismi" placeholder="Örn: Ejder Destesi"><br><br>
+
+  <button onclick="rastgeleKartSec()">Kart Seç</button>
+  <button onclick="geriAl()">Geri Al</button>
+  <button onclick="desteyiKaydet()">Desteyi Kaydet</button>
+  <button onclick="desteyiSifirla()">Desteyi Sıfırla</button>
+
+  <h3>Seçilen Kartlar:</h3>
+  <div id="gelen-kartlar"></div>
+
+  <h3>Kayıtlı Desteler</h3>
+  <ul id="deste-listesi"></ul>
+
+  <script>
+    let kartlar = [];
+    let kartAdetleri = {};
+    let kartSayaci = 1;
+    let sonSecilenKart = null;
+
+    function kartlariYukle() {
+      const secilenKartlar = document.getElementById('kart-sec').files;
+      kartlar = Array.from(secilenKartlar);
+      kartAdetleri = {};
+
+      const container = document.getElementById("kart-adetleri-container");
+      container.innerHTML = "";
+
+      kartlar.forEach((kart, index) => {
+        const kartId = "kart-" + index;
+        kartAdetleri[kartId] = 1;
+
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <img src="${URL.createObjectURL(kart)}" width="60">
+          Adet: <input type="number" id="${kartId}" value="1" min="1" max="20" onchange="kartAdetleri['${kartId}'] = parseInt(this.value)">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function rastgeleKartSec() {
+      let havuz = [];
+      kartlar.forEach((kart, index) => {
+        const id = "kart-" + index;
+        const adet = kartAdetleri[id] || 0;
+        for (let i = 0; i < adet; i++) {
+          havuz.push({ kart, id });
+        }
+      });
+
+      if (havuz.length === 0) {
+        alert("Seçilebilecek kart kalmadı.");
+        return;
+      }
+
+      const secilen = havuz[Math.floor(Math.random() * havuz.length)];
+      kartAdetleri[secilen.id]--;
+
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(secilen.kart);
+      img.width = 80;
+      img.className = "gelen-kart";
+      img.setAttribute("data-id", secilen.id);
+
+      document.getElementById("gelen-kartlar").appendChild(img);
+      sonSecilenKart = img;
+    }
+
+    function geriAl() {
+      if (!sonSecilenKart) return;
+      const id = sonSecilenKart.getAttribute("data-id");
+      kartAdetleri[id]++;
+      sonSecilenKart.remove();
+      sonSecilenKart = null;
+    }
+
+    function desteyiSifirla() {
+      kartlar = [];
+      kartAdetleri = {};
+      document.getElementById("kart-sec").value = "";
+      document.getElementById("kart-adetleri-container").innerHTML = "";
+      document.getElementById("gelen-kartlar").innerHTML = "";
+    }
+
+    function desteyiKaydet() {
+      const desteIsmi = document.getElementById("deste-ismi").value.trim();
+      const gelenKartlar = document.querySelectorAll('.gelen-kart');
+
+      if (!desteIsmi) {
+        alert("Lütfen deste ismini girin.");
+        return;
+      }
+
+      if (gelenKartlar.length === 0) {
+        alert("Henüz kart seçilmemiş.");
+        return;
+      }
+
+      const kartlarArr = [];
+      gelenKartlar.forEach(k => kartlarArr.push(k.src));
+
+      let desteler = JSON.parse(localStorage.getItem("kayitliDesteler") || "[]");
+      if (desteler.length >= 5) {
+        alert("En fazla 5 deste kaydedebilirsin.");
+        return;
+      }
+      if (desteler.some(d => d.isim === desteIsmi)) {
+        alert("Bu isimde bir deste zaten var.");
+        return;
+      }
+
+      desteler.push({
+        isim: desteIsmi,
+        kartlar: kartlarArr
+      });
+
+      localStorage.setItem("kayitliDesteler", JSON.stringify(desteler));
+      alert("Deste kaydedildi!");
+      document.getElementById("deste-ismi").value = "";
+      desteleriListele();
+    }
+
+    function desteleriListele() {
+      const liste = document.getElementById("deste-listesi");
+      liste.innerHTML = "";
+
+      const desteler = JSON.parse(localStorage.getItem("kayitliDesteler") || "[]");
+
+      desteler.forEach((deste, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <strong>${deste.isim}</strong>
+          <button onclick="desteyiYukle(${i})">Yükle</button>
+          <button onclick="desteyiSil(${i})">Sil</button>
+        `;
+        liste.appendChild(li);
+      });
+    }
+
+    function desteyiYukle(index) {
+      const desteler = JSON.parse(localStorage.getItem("kayitliDesteler") || "[]");
+      const gelenKartlar = document.getElementById("gelen-kartlar");
+      gelenKartlar.innerHTML = "";
+      kartSayaci = 1;
+
+      desteler[index].kartlar.forEach(src => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.width = 80;
+        img.className = "gelen-kart";
+        gelenKartlar.appendChild(img);
+        kartSayaci++;
+      });
+    }
+
+    function desteyiSil(index) {
+      let desteler = JSON.parse(localStorage.getItem("kayitliDesteler") || "[]");
+      desteler.splice(index, 1);
+      localStorage.setItem("kayitliDesteler", JSON.stringify(desteler));
+      desteleriListele();
+    }
+
+    window.onload = function () {
+      desteleriListele();
+    };
+  </script>
+
+</body>
+</html>
