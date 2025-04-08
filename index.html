@@ -2,191 +2,112 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Card Selector</title>
+  <title>Kart Seçici</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      margin: 0;
-      background-color: #f4f4f9;
-    }
-
-    .container {
-      display: flex;
-      justify-content: space-between;
-      width: 80%;
-    }
-
-    .left-section, .right-section {
-      width: 48%;
-      padding: 20px;
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-      margin-bottom: 20px;
-    }
-
-    button {
-      padding: 10px 15px;
-      margin-top: 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 14px;
-      color: #555;
-    }
-
-    #card-settings {
-      margin-bottom: 20px;
-    }
-
-    .card-type {
-      margin-bottom: 10px;
-    }
-
-    .card-type label {
-      margin-right: 10px;
-    }
-
-    input[type="number"] {
-      width: 60px;
-    }
+    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+    h1 { color: #333; }
+    #cardList img { width: 100px; margin: 10px; display: block; }
+    .cardItem { display: inline-block; text-align: center; margin: 10px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 0 5px #999; }
+    #selectedCard img { width: 150px; }
+    input[type="number"] { width: 50px; text-align: center; margin-top: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <!-- Sol taraf: Kart adetlerini ayarlama -->
-    <section class="left-section">
-      <h2>Kart Adetlerini Ayarla</h2>
-      <div id="card-settings">
-        <!-- Kart adetleri burada gösterilecek -->
-      </div>
-      <button id="add-card-btn">Kart Ekle</button>
-    </section>
+  <h1>🎴 Kart Seçici</h1>
+  <input type="file" id="fileInput" accept="image/*" multiple>
+  <div id="cardList"></div>
 
-    <!-- Sağ taraf: Kart seçme ve gösterme -->
-    <section class="right-section">
-      <h2>Rastgele Kart Seç</h2>
-      <button id="pick-card-btn">Rastgele Kart Seç</button>
-      <div id="picked-card">
-        <!-- Seçilen kart burada gösterilecek -->
-      </div>
-      <button id="reset-deck-btn">Deste Sıfırla</button>
-      <button id="save-deck-btn">Deste Kaydet</button>
-    </section>
-  </div>
+  <button onclick="selectRandomCard()">🎲 Rastgele Kart Seç</button>
 
-  <footer>
-    <p>Created with ❤️ by Egegungorr</p>
-  </footer>
+  <h2>Seçilen Kart:</h2>
+  <div id="selectedCard"></div>
 
   <script>
-    // Kart türleri ve adetlerini tutacak array
-    let cardTypes = [
-      { name: 'Kart 1', quantity: 0 },
-      { name: 'Kart 2', quantity: 0 },
-      { name: 'Kart 3', quantity: 0 },
-    ];
+    const cards = [];
 
-    let deck = [];
+    document.getElementById('fileInput').addEventListener('change', function (event) {
+      const files = event.target.files;
+      for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const imageUrl = e.target.result;
+          const card = {
+            name: file.name,
+            image: imageUrl,
+            count: 1 // Varsayılan 1 adet
+          };
+          cards.push(card);
+          displayCard(card);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
-    // Kart türleri ekleme işlevi
-    function renderCardSettings() {
-      const cardSettingsDiv = document.getElementById("card-settings");
-      cardSettingsDiv.innerHTML = ''; // Önceki içerikleri temizle
+    function displayCard(card) {
+      const container = document.createElement('div');
+      container.className = 'cardItem';
+      container.dataset.name = card.name;
 
-      cardTypes.forEach((card, index) => {
-        const cardDiv = document.createElement("div");
-        cardDiv.classList.add("card-type");
+      const img = document.createElement('img');
+      img.src = card.image;
 
-        const nameLabel = document.createElement("label");
-        nameLabel.innerText = card.name;
-
-        const quantityInput = document.createElement("input");
-        quantityInput.type = "number";
-        quantityInput.value = card.quantity;
-        quantityInput.min = "0";
-        quantityInput.addEventListener("input", (e) => {
-          card.quantity = parseInt(e.target.value);
-        });
-
-        cardDiv.appendChild(nameLabel);
-        cardDiv.appendChild(quantityInput);
-        cardSettingsDiv.appendChild(cardDiv);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.value = card.count;
+      input.addEventListener('change', () => {
+        card.count = parseInt(input.value) || 0;
       });
+
+      container.appendChild(img);
+      container.appendChild(input);
+      document.getElementById('cardList').appendChild(container);
     }
 
-    // Kart ekleme
-    document.getElementById("add-card-btn").addEventListener("click", () => {
-      const cardName = prompt("Kart adı girin (örn. Kart 4):");
-      if (cardName) {
-        const newCard = { name: cardName, quantity: 0 };
-        cardTypes.push(newCard);
-        renderCardSettings();
-    });
+    function selectRandomCard() {
+      const virtualDeck = [];
 
-    // Rastgele kart seçme
-    document.getElementById("pick-card-btn").addEventListener("click", () => {
-      deck = [];
-      cardTypes.forEach(card => {
-        for (let i = 0; i < card.quantity; i++) {
-          deck.push(card.name);
+      // Sanal deste oluştur
+      cards.forEach(card => {
+        for (let i = 0; i < card.count; i++) {
+          virtualDeck.push(card);
         }
       });
 
-      if (deck.length > 0) {
-        const randomCard = deck[Math.floor(Math.random() * deck.length)];
-        document.getElementById("picked-card").innerText = `Seçilen Kart: ${randomCard}`;
-        // Seçilen kartı desteden çıkar
-        const index = deck.indexOf(randomCard);
-        if (index > -1) {
-          deck.splice(index, 1);
+      if (virtualDeck.length === 0) {
+        alert("Destede hiç kart kalmadı!");
+        return;
+      }
+
+      // Rastgele seçim
+      const selected = virtualDeck[Math.floor(Math.random() * virtualDeck.length)];
+
+      // Adetini düşür
+      selected.count--;
+
+      // Güncelle görsel
+      const selectedDiv = document.getElementById('selectedCard');
+      selectedDiv.innerHTML = `<img src="${selected.image}"><p>${selected.name}</p>`;
+
+      // Ekrandaki input'u güncelle
+      const allItems = document.querySelectorAll('.cardItem');
+      for (let item of allItems) {
+        if (item.dataset.name === selected.name) {
+          const input = item.querySelector('input');
+          input.value = selected.count;
+          if (selected.count <= 0) {
+            item.remove();
+            // Asıl diziden de çıkar
+            const index = cards.findIndex(c => c.name === selected.name);
+            if (index > -1) cards.splice(index, 1);
+          }
+          break;
         }
-      } else {
-        document.getElementById("picked-card").innerText = "Deste boş!";
       }
-    });
-
-    // Deste sıfırlama
-    document.getElementById("reset-deck-btn").addEventListener("click", () => {
-      cardTypes.forEach(card => card.quantity = 0);
-      renderCardSettings();
-      document.getElementById("picked-card").innerText = '';
-    });
-
-    // Deste kaydetme
-    document.getElementById("save-deck-btn").addEventListener("click", () => {
-      const deckName = prompt("Deste adı girin:");
-      if (deckName) {
-        const savedDecks = JSON.parse(localStorage.getItem("savedDecks")) || [];
-        savedDecks.push({ name: deckName, cards: [...cardTypes] });
-        localStorage.setItem("savedDecks", JSON.stringify(savedDecks));
-        alert("Deste kaydedildi!");
-      }
-    });
-
-    // İlk render
-    renderCardSettings();
+    }
   </script>
+
 </body>
 </html>
